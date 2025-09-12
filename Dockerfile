@@ -5,4 +5,4 @@ COPY scanserver.py ./
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["scanserver.py"]
+ENTRYPOINT ["python", "scanserver.py"]

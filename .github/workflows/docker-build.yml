@@ -24,14 +24,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract branch name 
+      - name: Extract variables
         id: vars 
-        run: echo "BRANCH_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV 
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF_NAME}" >> $GITHUB_ENV 
+          echo "REPO_LC=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Build & Push Docker image 
         uses: docker/build-push-action@v6
         with:
           context: . 
           push: true 
-          tags: ghcr.io/${{ github.repository }}:${{ env.BRANCH_NAME }}
+          tags: ghcr.io/${{ env.REPO_LC }}:${{ env.BRANCH_NAME }}
 

@@ -1,7 +1,7 @@
 from flask import Flask, send_file
 import subprocess, time, os
 
-SCAN_DIR = "/home/nico/Documents/"
+SCAN_DIR = "/opt/paperless/consume"
 DEVICE="pixma:MG3600_192.168.0.44"
 
 app = Flask(__name__)

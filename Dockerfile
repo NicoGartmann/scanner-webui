@@ -1,14 +1,22 @@
-FROM python
+FROM python:3.13-slim
 
-RUN apt-get update -y && \ 
-    apt-get install sane-utils scanbd cifs-utils netpbm ghostscript -y && \
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+        sane-utils \
+        libsane1 \
+        scanbd \
+        cifs-utils \
+        netpbm \
+        ghostscript && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt /app
-COPY scanserver.py /app
+RUN mkdir -p /app/scan
 
-RUN pip install -r requirements.txt
+COPY ./requirements.txt /app
+COPY ./scanserver.py /app
 
-CMD  ["python", "scanserver.py"]
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["python", "scanserver.py"]

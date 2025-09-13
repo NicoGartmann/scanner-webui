@@ -4,7 +4,7 @@ import subprocess, time, os
 app = Flask(__name__)
 
 SCAN_DIR = "/app/scan"
-DEVICE = "pixma:MG3600_series"
+DEVICE = "pixma:MG3600_192.168.0.44"
 
 HTML = """
 <!DOCTYPE html>
@@ -90,12 +90,29 @@ def scan():
     filename = f"scan_{ts}.pdf"
     filepath = os.path.join(SCAN_DIR, filename)
 
-    cmd = f'scanimage --device-name="{DEVICE}" --format=pnm | pnmtops | ps2pdf - "{filepath}"'
     try:
-        subprocess.run(cmd, shell=True, check=True)
+        # 1. Scan als PNM
+        pnmfile = os.path.join(SCAN_DIR, f"scan_{ts}.pnm")
+        with open(pnmfile, "wb") as f:
+            subprocess.run(
+                ["scanimage", f"--device-name={DEVICE}", "--format=pnm"],
+                check=True,
+                stdout=f
+            )
+
+        # 2. PNM -> PDF
+        with open(filepath, "wb") as f:
+            ps = subprocess.Popen(["pnmtops"], stdin=open(pnmfile, "rb"), stdout=subprocess.PIPE)
+            subprocess.run(["ps2pdf", "-", filepath], check=True, stdin=ps.stdout)
+            ps.stdout.close()
+            ps.wait()
+
+        os.remove(pnmfile)  # optional temporäre PNM löschen
+
         return jsonify(success=True, message=f"Scan gespeichert als {filename}")
+
     except subprocess.CalledProcessError as e:
-        return jsonify(success=False, message=f"Beim Scannen ist etwas schief gelaufen")
+        return jsonify(success=False, message=f"Scan fehlgeschlagen: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

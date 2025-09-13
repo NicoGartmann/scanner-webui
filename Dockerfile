@@ -4,9 +4,11 @@ RUN apt-get update -y && \
     apt-get install sane-utils scanbd cifs-utils netpbm ghostscript -y && \
     rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
-COPY scanserver.py ./
+WORKDIR /app
+
+COPY requirements.txt /app
+COPY scanserver.py /app
 
 RUN pip install -r requirements.txt
 
-ENTRYPOINT ["python", "scanserver.py"]
+CMD  ["python", "scanserver.py"]

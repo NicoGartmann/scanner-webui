@@ -7,7 +7,8 @@ RUN apt-get update -y && \
         scanbd \
         cifs-utils \
         netpbm \
-        ghostscript && \
+        ghostscript \
+        poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

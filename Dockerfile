@@ -8,12 +8,14 @@ RUN apt-get update -y && \
         cifs-utils \
         netpbm \
         ghostscript \
-        poppler-utils && \
+        poppler-utils \
+        libtiff-tools && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN mkdir -p /app/scan
+# Verzeichnisse für Scans + Temp
+RUN mkdir -p /app/scan /app/tmp
 
 COPY ./requirements.txt /app
 COPY ./scanserver.py /app

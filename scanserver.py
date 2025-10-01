@@ -14,6 +14,15 @@ os.makedirs(TMP_DIR, exist_ok=True)
 # Zwischenspeicher für Mehrseiten-Scan
 temp_scans = []
 
+# Standard-Scanparameter für Dokumente
+SCAN_PARAMS = [
+    "--format=tiff",
+    "--resolution", "300",
+    "--mode", "Gray",
+    "-x", "210",   # DIN A4 Breite in mm
+    "-y", "297"    # DIN A4 Höhe in mm
+]
+
 HTML = """
 <!DOCTYPE html>
 <html lang="de">
@@ -104,10 +113,13 @@ def single_scan():
 @app.route("/scan/page", methods=["POST"])
 def scan_page():
     ts = time.strftime("%Y%m%d_%H%M%S")
-    tmpfile = os.path.join(TMP_DIR, f"page_{len(temp_scans)+1}_{ts}.pnm")
+    tmpfile = os.path.join(TMP_DIR, f"page_{len(temp_scans)+1}_{ts}.tiff")
     try:
         with open(tmpfile, "wb") as f:
-            subprocess.run(["scanimage", f"--device-name={DEVICE}", "--format=pnm"], check=True, stdout=f)
+            subprocess.run(
+                ["scanimage", f"--device-name={DEVICE}", *SCAN_PARAMS],
+                check=True, stdout=f
+            )
         temp_scans.append(tmpfile)
         return jsonify(success=True, message=f"Seite {len(temp_scans)} gescannt")
     except subprocess.CalledProcessError as e:
@@ -120,21 +132,17 @@ def finish_scan():
 
     ts = time.strftime("%Y%m%d_%H%M%S")
     filename = f"multiscan_{ts}.pdf"
-    filepath = os.path.join(SCAN_DIR, filename)   # ⚡ Finale Datei in SCAN_DIR
+    filepath = os.path.join(SCAN_DIR, filename)
 
     pdfs = []
     try:
-        # PNM -> PDF Umwandlung ins TMP_DIR
+        # TIFF -> PDF für jede Seite
         for i, tmpfile in enumerate(temp_scans, start=1):
             pdftmp = os.path.join(TMP_DIR, f"page_{i}.pdf")
-            with open(pdftmp, "wb") as f:
-                ps = subprocess.Popen(["pnmtops"], stdin=open(tmpfile, "rb"), stdout=subprocess.PIPE)
-                subprocess.run(["ps2pdf", "-", pdftmp], check=True, stdin=ps.stdout)
-                ps.stdout.close()
-                ps.wait()
+            subprocess.run(["tiff2pdf", "-o", pdftmp, tmpfile], check=True)
             pdfs.append(pdftmp)
 
-        # Finale Zusammenführung in SCAN_DIR
+        # Zusammenführen aller PDFs
         subprocess.run(["pdfunite", *pdfs, filepath], check=True)
 
         return jsonify(success=True, message=f"Mehrseitiges PDF gespeichert als {filename}")
@@ -143,7 +151,7 @@ def finish_scan():
         return jsonify(success=False, message=f"Fehler beim Zusammenfügen: {e}")
 
     finally:
-        # Cleanup von .pnm und Zwischen-PDFs
+        # Cleanup aller temporären Dateien
         for f in temp_scans + pdfs:
             try:
                 os.remove(f)
@@ -153,18 +161,18 @@ def finish_scan():
 
 def run_scan(filepath):
     try:
-        pnmfile = filepath.replace(".pdf", ".pnm")
-        with open(pnmfile, "wb") as f:
-            subprocess.run(["scanimage", f"--device-name={DEVICE}", "--format=pnm"], check=True, stdout=f)
-        with open(filepath, "wb") as f:
-            ps = subprocess.Popen(["pnmtops"], stdin=open(pnmfile, "rb"), stdout=subprocess.PIPE)
-            subprocess.run(["ps2pdf", "-", filepath], check=True, stdin=ps.stdout)
-            ps.stdout.close()
-            ps.wait()
-        os.remove(pnmfile)
+        tifffile = filepath.replace(".pdf", ".tiff")
+        with open(tifffile, "wb") as f:
+            subprocess.run(
+                ["scanimage", f"--device-name={DEVICE}", *SCAN_PARAMS],
+                check=True, stdout=f
+            )
+        subprocess.run(["tiff2pdf", "-o", filepath, tifffile], check=True)
+        os.remove(tifffile)
         return jsonify(success=True, message=f"Scan gespeichert als {os.path.basename(filepath)}")
     except subprocess.CalledProcessError as e:
         return jsonify(success=False, message=f"Scan fehlgeschlagen: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+

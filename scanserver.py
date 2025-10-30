@@ -117,7 +117,7 @@ def scan_page():
     try:
         with open(tmpfile, "wb") as f:
             subprocess.run(
-                ["scanimage", f"--device-name={DEVICE}", *SCAN_PARAMS],
+                ["scanimage", "--device-name", DEVICE, *SCAN_PARAMS],
                 check=True, stdout=f
             )
         temp_scans.append(tmpfile)
@@ -164,7 +164,7 @@ def run_scan(filepath):
         tifffile = filepath.replace(".pdf", ".tiff")
         with open(tifffile, "wb") as f:
             subprocess.run(
-                ["scanimage", f"--device-name={DEVICE}", *SCAN_PARAMS],
+                ["scanimage", "--device-name", DEVICE, *SCAN_PARAMS],
                 check=True, stdout=f
             )
         subprocess.run(["tiff2pdf", "-o", filepath, tifffile], check=True)

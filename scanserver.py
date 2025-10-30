@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 SCAN_DIR = "/app/scan"      # Fertige PDFs (Einzel + Mehrseitig)
 TMP_DIR = "/app/tmp"        # Temporäre Dateien für Mehrseitenscan
-DEVICE = "pixma:MG3600_192.168.0.44"
+DEVICE = "pixma:MG3600_Drucker"
 
 # Verzeichnisse sicherstellen
 os.makedirs(SCAN_DIR, exist_ok=True)
